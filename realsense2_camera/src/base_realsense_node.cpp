@@ -1512,6 +1512,17 @@ void BaseRealSenseNode::imu_callback_sync(rs2::frame frame, imu_sync_method sync
             imu_msg.header.seq = seq;
             ImuMessage_AddDefaultValues(imu_msg);
             // TODO: Transform to robot body frame
+            tf::Vector3 v_acc;
+            tf::Vector3 w_ang;
+            tf::vector3MsgToTF(imu_msg.linear_acceleration, v_acc);
+            tf::vector3MsgToTF(imu_msg.angular_velocity, w_ang);
+            //
+            v_acc = tf::quatRotate(_imu_to_robot_rot, v_acc);
+            w_ang = tf::quatRotate(_imu_to_robot_rot, w_ang);
+            //
+            tf::vector3TFToMsg(v_acc, imu_msg.linear_acceleration);
+            tf::vector3TFToMsg(w_ang,imu_msg.angular_velocity);
+
             _synced_imu_publisher->Publish(imu_msg);
             ROS_DEBUG("Publish united %s stream", rs2_stream_to_string(frame.get_profile().stream_type()));
             imu_msgs.pop_front();
