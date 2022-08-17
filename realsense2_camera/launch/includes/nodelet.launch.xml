@@ -107,6 +107,7 @@
   <arg name="reconnect_timeout"        default= "6.0"/>
   <arg name="wait_for_device_timeout"  default= "-1.0"/>
   <arg name="unite_imu_method"         default="none"/> <!-- Options are: [none, copy, linear_interpolation] -->
+  <arg name="sensor_extrinsic_file"    default="$(find realsense2_camera)/launch/includes/sensor_extrinsic.yaml"/>
   
 
 
@@ -213,6 +214,6 @@
     <param name="reconnect_timeout"        type="double" value="$(arg reconnect_timeout)"/>
     <param name="wait_for_device_timeout"  type="double" value="$(arg wait_for_device_timeout)"/>
     <param name="unite_imu_method"         type="str"    value="$(arg unite_imu_method)"/>
-
+    <rosparam command="load"               file="$(arg sensor_extrinsic_file)"/>
   </node>
 </launch>

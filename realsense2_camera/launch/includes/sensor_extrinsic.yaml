@@ -1,0 +1,15 @@
+# Transform between robot body center and VIO center
+# Vectors expressed in VIO frame will be converted to 
+# robot body frame if multiplied by this offset
+# T_odom_vio * T_robot_vio.inverse = T_odom_robot
+T_robot_vio:
+  pos: [0., 0., 0.] # x, y, z
+  ori: [0., 0., 0., 1.0] # x, y, z, w
+
+# Transform between robot body center and IMU center
+# Vectors expressed in IMU frame will be converted to 
+# robot body frame if multiplied by this offset
+# T_odom_imu * T_robot_imu.inverse = T_odom_robot
+T_robot_imu:
+  pos: [0., 0., 0.] # x, y, z
+  ori: [0., 0., 0., 1.0] # x, y, z, w

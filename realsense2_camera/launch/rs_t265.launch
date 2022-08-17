@@ -30,9 +30,10 @@ https://github.com/IntelRealSense/librealsense/blob/master/third-party/libtm/lib
   <arg name="linear_accel_cov"      default="0.01"/>
   <arg name="initial_reset"         default="false"/>
   <arg name="reconnect_timeout"     default="6.0"/>
-  <arg name="unite_imu_method"      default=""/>
+  <arg name="unite_imu_method"      default="linear_interpolation"/>
 
   <arg name="publish_odom_tf"     default="true"/>
+  <arg name="sensor_extrinsic_file"    default="$(find realsense2_camera)/launch/includes/sensor_extrinsic.yaml"/>
   
   <group ns="$(arg camera)">
     <include file="$(find realsense2_camera)/launch/includes/nodelet.launch.xml">
@@ -62,6 +63,7 @@ https://github.com/IntelRealSense/librealsense/blob/master/third-party/libtm/lib
       <arg name="unite_imu_method"         value="$(arg unite_imu_method)"/>
 
       <arg name="publish_odom_tf"          value="$(arg publish_odom_tf)"/>
+      <arg name="sensor_extrinsic_file"    value="$(arg sensor_extrinsic_file)"/>
     </include>
   </group>
 </launch>

@@ -815,6 +815,35 @@ void BaseRealSenseNode::getParameters()
     _pnh.param("angular_velocity_cov", _angular_velocity_cov, static_cast<double>(0.01));
     _pnh.param("hold_back_imu_for_frames", _hold_back_imu_for_frames, HOLD_BACK_IMU_FOR_FRAMES);
     _pnh.param("publish_odom_tf", _publish_odom_tf, PUBLISH_ODOM_TF);
+    //
+    // load sensor extrinsics for robot center to VIO center
+    std::vector<double> p_off, o_off;
+    tf::Transform offset;
+    _pnh.param<std::vector<double>>("T_robot_vio/pos", p_off, std::vector<double>{0., 0., 0.});
+    _pnh.param<std::vector<double>>("T_robot_vio/ori", o_off, std::vector<double>{0., 0., 0., 1.0});
+    offset.setOrigin(tf::Vector3(p_off[0], p_off[1], p_off[2]));
+    offset.setRotation(tf::Quaternion(o_off[0], o_off[1], o_off[2], o_off[3]).normalized());
+    _vio_to_robot_pos = offset.inverse().getOrigin();
+    _vio_to_robot_rot = offset.inverse().getRotation();
+    ROS_INFO("Robot to VIO position offset:[%.3f, %.3f, %.3f].", _vio_to_robot_pos.x(),
+        _vio_to_robot_pos.y(), _vio_to_robot_pos.z());
+    ROS_INFO("Robot to VIO orientation offset:[%.3f, %.3f, %.3f, %.3f].", _vio_to_robot_rot.x(),
+        _vio_to_robot_rot.y(), _vio_to_robot_rot.z(), _vio_to_robot_rot.w());
+    // load sensor extrinsics for robot center to IMU center
+    p_off.clear();
+    o_off.clear();
+    _pnh.param<std::vector<double>>("T_robot_imu/pos", p_off, std::vector<double>{0., 0., 0.});
+    _pnh.param<std::vector<double>>("T_robot_imu/ori", o_off, std::vector<double>{0., 0., 0., 1.0});
+    offset.setOrigin(tf::Vector3(p_off[0], p_off[1], p_off[2]));
+    offset.setRotation(tf::Quaternion(o_off[0], o_off[1], o_off[2], o_off[3]).normalized());
+    _imu_to_robot_pos = offset.inverse().getOrigin();
+    _imu_to_robot_rot = offset.inverse().getRotation();
+
+    ROS_INFO("Robot to IMU position offset:[%.3f, %.3f, %.3f].", _imu_to_robot_pos.x(),
+        _imu_to_robot_pos.y(), _imu_to_robot_pos.z());
+    ROS_INFO("Robot to IMU orientation offset:[%.3f, %.3f, %.3f, %.3f].", _imu_to_robot_rot.x(),
+        _imu_to_robot_rot.y(), _imu_to_robot_rot.z(), _imu_to_robot_rot.w());
+
 }
 
 void BaseRealSenseNode::setupDevice()
@@ -1482,6 +1511,7 @@ void BaseRealSenseNode::imu_callback_sync(rs2::frame frame, imu_sync_method sync
             sensor_msgs::Imu imu_msg = imu_msgs.front();
             imu_msg.header.seq = seq;
             ImuMessage_AddDefaultValues(imu_msg);
+            // TODO: Transform to robot body frame
             _synced_imu_publisher->Publish(imu_msg);
             ROS_DEBUG("Publish united %s stream", rs2_stream_to_string(frame.get_profile().stream_type()));
             imu_msgs.pop_front();
@@ -1512,7 +1542,6 @@ void BaseRealSenseNode::imu_callback(rs2::frame frame)
         auto imu_msg = sensor_msgs::Imu();
         ImuMessage_AddDefaultValues(imu_msg);
         imu_msg.header.frame_id = _optical_frame_id[stream_index];
-
         auto crnt_reading = *(reinterpret_cast<const float3*>(frame.get_data()));
         if (GYRO == stream_index)
         {
@@ -1598,7 +1627,22 @@ void BaseRealSenseNode::pose_callback(rs2::frame frame)
         tf::vector3MsgToTF(om_msg.vector,tfv);
         tfv=tf::quatRotate(q,tfv);
         tf::vector3TFToMsg(tfv,om_msg.vector);
-	
+        // TODO: Transform to robot frame
+        // For now only transform this outgoing message
+        tf::Vector3 p_odom_vio;
+        tf::Quaternion q_odom_vio;
+        tf::Vector3 v_odom_vio;
+        tf::Vector3 w_odom_vio;
+        tf::pointMsgToTF(pose_msg.pose.position, p_odom_vio);
+        tf::quaternionMsgToTF(pose_msg.pose.orientation, q_odom_vio);
+        tf::vector3MsgToTF(v_msg.vector, v_odom_vio);
+        tf::vector3MsgToTF(om_msg.vector, w_odom_vio);
+        //
+        p_odom_vio = tf::quatRotate(_vio_to_robot_rot, p_odom_vio) + _vio_to_robot_pos;
+        // TODO: Find out if this is right
+        q_odom_vio = _vio_to_robot_rot * q_odom_vio;
+        v_odom_vio = tf::quatRotate(_vio_to_robot_rot, v_odom_vio);
+        w_odom_vio = tf::quatRotate(_vio_to_robot_rot, w_odom_vio);
 
         nav_msgs::Odometry odom_msg;
         _seq[stream_index] += 1;
@@ -1607,15 +1651,16 @@ void BaseRealSenseNode::pose_callback(rs2::frame frame)
         odom_msg.child_frame_id = _frame_id[POSE];
         odom_msg.header.stamp = t;
         odom_msg.header.seq = _seq[stream_index];
-        odom_msg.pose.pose = pose_msg.pose;
+        tf::pointTFToMsg(p_odom_vio, odom_msg.pose.pose.position);
+        tf::quaternionTFToMsg(q_odom_vio, odom_msg.pose.pose.orientation);
         odom_msg.pose.covariance = {cov_pose, 0, 0, 0, 0, 0,
                                     0, cov_pose, 0, 0, 0, 0,
                                     0, 0, cov_pose, 0, 0, 0,
                                     0, 0, 0, cov_twist, 0, 0,
                                     0, 0, 0, 0, cov_twist, 0,
                                     0, 0, 0, 0, 0, cov_twist};
-        odom_msg.twist.twist.linear = v_msg.vector;
-        odom_msg.twist.twist.angular = om_msg.vector;
+        tf::vector3TFToMsg(v_odom_vio, odom_msg.twist.twist.linear);
+        tf::vector3TFToMsg(w_odom_vio, odom_msg.twist.twist.angular);
         odom_msg.twist.covariance ={cov_pose, 0, 0, 0, 0, 0,
                                     0, cov_pose, 0, 0, 0, 0,
                                     0, 0, cov_pose, 0, 0, 0,
