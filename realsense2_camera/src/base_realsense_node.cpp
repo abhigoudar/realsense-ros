@@ -1640,20 +1640,19 @@ void BaseRealSenseNode::pose_callback(rs2::frame frame)
         tf::vector3TFToMsg(tfv,om_msg.vector);
         // TODO: Transform to robot frame
         // For now only transform this outgoing message
-        tf::Vector3 p_odom_vio;
-        tf::Quaternion q_odom_vio;
-        tf::Vector3 v_odom_vio;
-        tf::Vector3 w_odom_vio;
-        tf::pointMsgToTF(pose_msg.pose.position, p_odom_vio);
-        tf::quaternionMsgToTF(pose_msg.pose.orientation, q_odom_vio);
-        tf::vector3MsgToTF(v_msg.vector, v_odom_vio);
-        tf::vector3MsgToTF(om_msg.vector, w_odom_vio);
+        tf::Vector3 p_odom_c;
+        tf::Quaternion q_odom_c;
+        tf::Vector3 v_odom_c;
+        tf::Vector3 w_odom_c;
+        tf::pointMsgToTF(pose_msg.pose.position, p_odom_c);
+        tf::quaternionMsgToTF(pose_msg.pose.orientation, q_odom_c);
+        tf::vector3MsgToTF(v_msg.vector, v_odom_c);
+        tf::vector3MsgToTF(om_msg.vector, w_odom_c);
         //
-        p_odom_vio = tf::quatRotate(_vio_to_robot_rot, p_odom_vio) + _vio_to_robot_pos;
-        // TODO: Find out if this is right
-        q_odom_vio = _vio_to_robot_rot * q_odom_vio;
-        v_odom_vio = tf::quatRotate(_vio_to_robot_rot, v_odom_vio);
-        w_odom_vio = tf::quatRotate(_vio_to_robot_rot, w_odom_vio);
+        p_odom_c = tf::quatRotate(q_odom_c, _vio_to_robot_pos) + p_odom_c;
+        q_odom_c = q_odom_c * _vio_to_robot_rot;
+        v_odom_c = tf::quatRotate(_vio_to_robot_rot, v_odom_c);
+        w_odom_c = tf::quatRotate(_vio_to_robot_rot, w_odom_c);
 
         nav_msgs::Odometry odom_msg;
         _seq[stream_index] += 1;
@@ -1662,16 +1661,16 @@ void BaseRealSenseNode::pose_callback(rs2::frame frame)
         odom_msg.child_frame_id = _frame_id[POSE];
         odom_msg.header.stamp = t;
         odom_msg.header.seq = _seq[stream_index];
-        tf::pointTFToMsg(p_odom_vio, odom_msg.pose.pose.position);
-        tf::quaternionTFToMsg(q_odom_vio, odom_msg.pose.pose.orientation);
+        tf::pointTFToMsg(p_odom_c, odom_msg.pose.pose.position);
+        tf::quaternionTFToMsg(q_odom_c, odom_msg.pose.pose.orientation);
         odom_msg.pose.covariance = {cov_pose, 0, 0, 0, 0, 0,
                                     0, cov_pose, 0, 0, 0, 0,
                                     0, 0, cov_pose, 0, 0, 0,
                                     0, 0, 0, cov_twist, 0, 0,
                                     0, 0, 0, 0, cov_twist, 0,
                                     0, 0, 0, 0, 0, cov_twist};
-        tf::vector3TFToMsg(v_odom_vio, odom_msg.twist.twist.linear);
-        tf::vector3TFToMsg(w_odom_vio, odom_msg.twist.twist.angular);
+        tf::vector3TFToMsg(v_odom_c, odom_msg.twist.twist.linear);
+        tf::vector3TFToMsg(w_odom_c, odom_msg.twist.twist.angular);
         odom_msg.twist.covariance ={cov_pose, 0, 0, 0, 0, 0,
                                     0, cov_pose, 0, 0, 0, 0,
                                     0, 0, cov_pose, 0, 0, 0,
