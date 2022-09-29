@@ -35,7 +35,7 @@ https://github.com/IntelRealSense/librealsense/blob/master/third-party/libtm/lib
   <arg name="publish_odom_tf"     default="true"/>
 
   <arg name="enable_mapping"           default="true"/>
-  <arg name="sensor_extrinsic_file"    default="$(find realsense2_camera)/launch/includes/sensor_extrinsic.yaml"/>
+  <arg name="robot_config_file"    default="$(find realsense2_camera)/launch/includes/robot_config.yaml"/>
   
   <group ns="$(arg camera)">
     <include file="$(find realsense2_camera)/launch/includes/nodelet.launch.xml">
@@ -67,7 +67,7 @@ https://github.com/IntelRealSense/librealsense/blob/master/third-party/libtm/lib
       <arg name="publish_odom_tf"          value="$(arg publish_odom_tf)"/>
 
       <arg name="enable_mapping"           value="$(arg enable_mapping)"/>
-      <arg name="sensor_extrinsic_file"    value="$(arg sensor_extrinsic_file)"/>
+      <arg name="robot_config_file"    value="$(arg robot_config_file)"/>
 
     </include>
   </group>

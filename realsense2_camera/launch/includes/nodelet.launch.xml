@@ -109,7 +109,7 @@
   <arg name="unite_imu_method"         default="none"/> <!-- Options are: [none, copy, linear_interpolation] -->
 
   <arg name="enable_mapping"           default="true"/>
-  <arg name="sensor_extrinsic_file"    default="$(find realsense2_camera)/launch/includes/sensor_extrinsic.yaml"/>
+  <arg name="robot_config_file"    default="$(find realsense2_camera)/launch/includes/robot_config.yaml"/>
   
 
 
@@ -218,6 +218,6 @@
     <param name="unite_imu_method"         type="str"    value="$(arg unite_imu_method)"/>
 
     <param name="enable_mapping"           type="bool"   value="$(arg enable_mapping)"/>
-    <rosparam command="load"               file="$(arg sensor_extrinsic_file)"/>
+    <param name="robot_config_file"        type="str"    value="$(arg robot_config_file)"/>
   </node>
 </launch>

@@ -19,6 +19,7 @@
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <condition_variable>
 
+#include <yaml-cpp/yaml.h>
 #include <queue>
 #include <mutex>
 #include <atomic>
@@ -287,9 +288,7 @@ namespace realsense2_camera
         std::vector<geometry_msgs::TransformStamped> _static_tf_msgs;
         std::shared_ptr<std::thread> _tf_t, _update_functions_t;
         tf::Vector3 _vio_to_robot_pos;
-        tf::Vector3 _imu_to_robot_pos;
         tf::Quaternion _vio_to_robot_rot;
-        tf::Quaternion _imu_to_robot_rot;
 
         std::map<stream_index_pair, ImagePublisherWithFrequencyDiagnostics> _image_publishers;
         std::map<stream_index_pair, ros::Publisher> _imu_publishers;

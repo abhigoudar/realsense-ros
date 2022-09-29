@@ -23,6 +23,8 @@ find_package(catkin REQUIRED COMPONENTS
     diagnostic_updater
     )
 
+find_package(yaml-cpp REQUIRED)
+
 if(BUILD_WITH_OPENMP)
     find_package(OpenMP)
     if(NOT OpenMP_FOUND)
@@ -122,6 +124,7 @@ target_link_libraries(${PROJECT_NAME}
     ${realsense2_LIBRARY}
     ${catkin_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
+    yaml-cpp
     )
 
 if(WIN32)

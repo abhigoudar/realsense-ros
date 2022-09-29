@@ -1,0 +1,16 @@
+world_frame: "world"
+#
+robot_frame: "base_link_est"
+#
+
+imu:
+  pos: [0., 0., 0.] # x, y, z (m) sensor extrinsic position 
+  ori: [0., 0., 0., 1.] # qx, qy, qz, qw sensor extrinsic orientation
+
+
+############### VIO sensor #################
+
+vio:
+  pos: [0., 0., 0.] # x, y, z (m) sensor extrinsic position 
+  ori: [0., 0., 0., 1.] # qx, qy, qz, qw sensor extrinsic orientation
+

@@ -818,10 +818,15 @@ void BaseRealSenseNode::getParameters()
     _pnh.param("publish_odom_tf", _publish_odom_tf, PUBLISH_ODOM_TF);
     //
     // load sensor extrinsics for robot center to VIO center
+    std::string robot_config_file = "";
+    _pnh.param("robot_config_file", robot_config_file, robot_config_file);
+    assert(!robot_config_file.empty() && "Valid robot config file not provided");
+    //
+    YAML::Node robot_config = YAML::LoadFile(robot_config_file);
     std::vector<double> p_off, o_off;
     tf::Transform offset;
-    _pnh.param<std::vector<double>>("T_robot_vio/pos", p_off, std::vector<double>{0., 0., 0.});
-    _pnh.param<std::vector<double>>("T_robot_vio/ori", o_off, std::vector<double>{0., 0., 0., 1.0});
+    p_off = robot_config["vio"]["pos"].as<std::vector<double>>();
+    o_off = robot_config["vio"]["ori"].as<std::vector<double>>();
     offset.setOrigin(tf::Vector3(p_off[0], p_off[1], p_off[2]));
     offset.setRotation(tf::Quaternion(o_off[0], o_off[1], o_off[2], o_off[3]).normalized());
     _vio_to_robot_pos = offset.inverse().getOrigin();
@@ -830,21 +835,6 @@ void BaseRealSenseNode::getParameters()
         _vio_to_robot_pos.y(), _vio_to_robot_pos.z());
     ROS_INFO("Robot to VIO orientation offset:[%.3f, %.3f, %.3f, %.3f].", _vio_to_robot_rot.x(),
         _vio_to_robot_rot.y(), _vio_to_robot_rot.z(), _vio_to_robot_rot.w());
-    // load sensor extrinsics for robot center to IMU center
-    p_off.clear();
-    o_off.clear();
-    _pnh.param<std::vector<double>>("T_robot_imu/pos", p_off, std::vector<double>{0., 0., 0.});
-    _pnh.param<std::vector<double>>("T_robot_imu/ori", o_off, std::vector<double>{0., 0., 0., 1.0});
-    offset.setOrigin(tf::Vector3(p_off[0], p_off[1], p_off[2]));
-    offset.setRotation(tf::Quaternion(o_off[0], o_off[1], o_off[2], o_off[3]).normalized());
-    _imu_to_robot_pos = offset.inverse().getOrigin();
-    _imu_to_robot_rot = offset.inverse().getRotation();
-
-    ROS_INFO("Robot to IMU position offset:[%.3f, %.3f, %.3f].", _imu_to_robot_pos.x(),
-        _imu_to_robot_pos.y(), _imu_to_robot_pos.z());
-    ROS_INFO("Robot to IMU orientation offset:[%.3f, %.3f, %.3f, %.3f].", _imu_to_robot_rot.x(),
-        _imu_to_robot_rot.y(), _imu_to_robot_rot.z(), _imu_to_robot_rot.w());
-
 }
 
 void BaseRealSenseNode::setupDevice()
@@ -1540,18 +1530,6 @@ void BaseRealSenseNode::imu_callback_sync(rs2::frame frame, imu_sync_method sync
             sensor_msgs::Imu imu_msg = imu_msgs.front();
             imu_msg.header.seq = seq;
             ImuMessage_AddDefaultValues(imu_msg);
-            // TODO: Transform to robot body frame
-            tf::Vector3 v_acc;
-            tf::Vector3 w_ang;
-            tf::vector3MsgToTF(imu_msg.linear_acceleration, v_acc);
-            tf::vector3MsgToTF(imu_msg.angular_velocity, w_ang);
-            //
-            v_acc = tf::quatRotate(_imu_to_robot_rot, v_acc);
-            w_ang = tf::quatRotate(_imu_to_robot_rot, w_ang);
-            //
-            tf::vector3TFToMsg(v_acc, imu_msg.linear_acceleration);
-            tf::vector3TFToMsg(w_ang,imu_msg.angular_velocity);
-
             _synced_imu_publisher->Publish(imu_msg);
             ROS_DEBUG("Publish united %s stream", rs2_stream_to_string(frame.get_profile().stream_type()));
             imu_msgs.pop_front();
