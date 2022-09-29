@@ -831,9 +831,9 @@ void BaseRealSenseNode::getParameters()
     offset.setRotation(tf::Quaternion(o_off[0], o_off[1], o_off[2], o_off[3]).normalized());
     _vio_to_robot_pos = offset.inverse().getOrigin();
     _vio_to_robot_rot = offset.inverse().getRotation();
-    ROS_INFO("Robot to VIO position offset:[%.3f, %.3f, %.3f].", _vio_to_robot_pos.x(),
+    ROS_INFO("VIO to Robot position offset:[%.3f, %.3f, %.3f].", _vio_to_robot_pos.x(),
         _vio_to_robot_pos.y(), _vio_to_robot_pos.z());
-    ROS_INFO("Robot to VIO orientation offset:[%.3f, %.3f, %.3f, %.3f].", _vio_to_robot_rot.x(),
+    ROS_INFO("VIO to Robot orientation offset:[%.3f, %.3f, %.3f, %.3f].", _vio_to_robot_rot.x(),
         _vio_to_robot_rot.y(), _vio_to_robot_rot.z(), _vio_to_robot_rot.w());
 }
 
