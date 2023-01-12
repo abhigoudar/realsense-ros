@@ -33,12 +33,14 @@
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/static_transform_broadcaster.h>
+#include <tf2/convert.h>
 #include <eigen3/Eigen/Geometry>
 #include <condition_variable>
 
 #include <ros_sensor.h>
 #include <named_filter.h>
 
+#include <yaml-cpp/yaml.h>
 #include <queue>
 #include <mutex>
 #include <atomic>
@@ -136,6 +138,8 @@ namespace realsense2_camera
         };
 
         std::string _base_frame_id;
+        std::string _odom_frame_id;
+        bool _enable_mapping;
         bool _is_running;
         rclcpp::Node& _node;
         std::string _camera_name;
@@ -252,6 +256,8 @@ namespace realsense2_camera
         std::shared_ptr<tf2_ros::TransformBroadcaster> _dynamic_tf_broadcaster;
         std::vector<geometry_msgs::msg::TransformStamped> _static_tf_msgs;
         std::shared_ptr<std::thread> _tf_t;
+        tf2::Vector3 _vio_to_robot_pos;
+        tf2::Quaternion _vio_to_robot_rot;
 
         bool _use_intra_process;      
         std::map<stream_index_pair, std::shared_ptr<image_publisher>> _image_publishers;

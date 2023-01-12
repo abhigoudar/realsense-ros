@@ -104,6 +104,7 @@ find_package(nav_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(diagnostic_updater REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 find_package(realsense2 2.51.1)
 if(NOT realsense2_FOUND)
@@ -193,6 +194,7 @@ add_library(${PROJECT_NAME} SHARED
 
 target_link_libraries(${PROJECT_NAME}
     ${realsense2_LIBRARY}
+    yaml-cpp
     )
 
 set(dependencies

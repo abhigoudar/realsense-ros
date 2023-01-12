@@ -64,6 +64,43 @@ void BaseRealSenseNode::getParameters()
     _base_frame_id = _parameters->setParam<std::string>(param_name, DEFAULT_BASE_FRAME_ID);
     _base_frame_id = (static_cast<std::ostringstream&&>(std::ostringstream() << _camera_name << "_" << _base_frame_id)).str();
     _parameters_names.push_back(param_name);
+
+    param_name = std::string("odom_frame_id");
+    _odom_frame_id = _parameters->setParam<std::string>(param_name, DEFAULT_ODOM_FRAME_ID);
+    _odom_frame_id = (static_cast<std::ostringstream&&>(std::ostringstream() << _camera_name << "_" << _odom_frame_id)).str();
+    _parameters_names.push_back(param_name);
+
+    ROS_INFO("Odom frame id:[%s] base_frame_id:[%s]", _odom_frame_id.c_str(), _base_frame_id.c_str());
+
+    param_name = std::string("enable_mapping");
+    _enable_mapping = _parameters->setParam<bool>(param_name, true);
+    _parameters_names.push_back(param_name);
+
+    // load sensor extrinsics for robot center to VIO center
+    std::string robot_config_file = "";
+    param_name = std::string("robot_config");
+    robot_config_file = _parameters->setParam<std::string>(param_name, "");
+    //
+    try
+    {
+        YAML::Node robot_config = YAML::LoadFile(robot_config_file);
+        std::vector<double> p_off, o_off;
+        p_off = robot_config["vio"]["pos"].as<std::vector<double>>();
+        o_off = robot_config["vio"]["ori"].as<std::vector<double>>();
+        _vio_to_robot_pos =tf2::Vector3(-p_off[0], -p_off[1], -p_off[2]);
+        _vio_to_robot_rot = tf2::Quaternion(o_off[0], o_off[1], o_off[2], o_off[3]).normalized().inverse();
+    }
+    catch(const std::exception& e)
+    {
+        ROS_INFO("Robot config:[%s] not found", robot_config_file.c_str());
+        _vio_to_robot_pos =tf2::Vector3(0, 0, 0);
+        _vio_to_robot_rot = tf2::Quaternion(0, 0, 0, 1);
+    }
+
+    ROS_INFO("VIO to Robot position offset:[%.3f, %.3f, %.3f].", _vio_to_robot_pos.x(),
+        _vio_to_robot_pos.y(), _vio_to_robot_pos.z());
+    ROS_INFO("VIO to Robot orientation offset:[%.3f, %.3f, %.3f, %.3f].", _vio_to_robot_rot.x(),
+        _vio_to_robot_rot.y(), _vio_to_robot_rot.z(), _vio_to_robot_rot.w());
 }
 
 void BaseRealSenseNode::setDynamicParams()

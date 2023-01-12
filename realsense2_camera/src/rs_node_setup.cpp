@@ -155,6 +155,30 @@ void BaseRealSenseNode::setAvailableSensors()
         _available_ros_sensors.push_back(std::move(rosSensor));
     }
 
+    ROS_INFO("Setting Localization Parameters.");
+
+    for(auto&& sensor : _dev_sensors)
+    {
+        std::string module_name = create_graph_resource_name(sensor.get_info(RS2_CAMERA_INFO_NAME));
+        ROS_INFO_STREAM("module_name:" << module_name);
+        //
+        rs2_option option(rs2_option::RS2_OPTION_ENABLE_MAPPING);
+        if (sensor.supports(option))
+        {
+            try
+            {
+                sensor.set_option(option, _enable_mapping);
+                auto option_value = sensor.get_option(option);
+                ROS_INFO_STREAM("RS2_OPTION_ENABLE_MAPPING: User value:" << _enable_mapping 
+                    << " On device:" << option_value);
+            }
+            catch(const std::exception& e)
+            {
+                ROS_DEBUG_STREAM("Failed configure localization params:" << std::endl << e.what());
+            }
+        }
+    }
+
 }
 
 void BaseRealSenseNode::setCallbackFunctions()

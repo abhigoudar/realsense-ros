@@ -465,7 +465,7 @@ void BaseRealSenseNode::pose_callback(rs2::frame frame)
     static tf2_ros::TransformBroadcaster br(_node);
     geometry_msgs::msg::TransformStamped msg;
     msg.header.stamp = t;
-    msg.header.frame_id = DEFAULT_ODOM_FRAME_ID;
+    msg.header.frame_id = _odom_frame_id;
     msg.child_frame_id = FRAME_ID(POSE);
     msg.transform.translation.x = pose_msg.pose.position.x;
     msg.transform.translation.y = pose_msg.pose.position.y;
@@ -497,11 +497,32 @@ void BaseRealSenseNode::pose_callback(rs2::frame frame)
         om_msg.vector.y = tfv.y();
         om_msg.vector.z = tfv.z();    
 
+        tf2::Vector3 p_odom_c(pose_msg.pose.position.x, pose_msg.pose.position.y,
+            pose_msg.pose.position.z);
+        tf2::Quaternion q_odom_c(pose_msg.pose.orientation.x, pose_msg.pose.orientation.y,
+            pose_msg.pose.orientation.z, pose_msg.pose.orientation.w);
+        tf2::Vector3 v_odom_c(v_msg.vector.x, v_msg.vector.y,
+            v_msg.vector.z);
+        tf2::Vector3 w_odom_c(om_msg.vector.x, om_msg.vector.y,
+            om_msg.vector.z);
+        //
+        p_odom_c = tf2::quatRotate(q_odom_c, _vio_to_robot_pos) + p_odom_c;
+        q_odom_c = q_odom_c * _vio_to_robot_rot;
+        v_odom_c = tf2::quatRotate(_vio_to_robot_rot, v_odom_c);
+        w_odom_c = tf2::quatRotate(_vio_to_robot_rot, w_odom_c);
+
         nav_msgs::msg::Odometry odom_msg;
 
-        odom_msg.header.frame_id = DEFAULT_ODOM_FRAME_ID;
+        odom_msg.header.frame_id = _odom_frame_id;
         odom_msg.child_frame_id = FRAME_ID(POSE);
         odom_msg.header.stamp = t;
+        odom_msg.pose.pose.position.x = p_odom_c.x();
+        odom_msg.pose.pose.position.y = p_odom_c.y();
+        odom_msg.pose.pose.position.z = p_odom_c.z();
+        odom_msg.pose.pose.orientation.x = q_odom_c.x();
+        odom_msg.pose.pose.orientation.y = q_odom_c.y();
+        odom_msg.pose.pose.orientation.z = q_odom_c.z();
+        odom_msg.pose.pose.orientation.w = q_odom_c.w();
         odom_msg.pose.pose = pose_msg.pose;
         odom_msg.pose.covariance = {cov_pose, 0, 0, 0, 0, 0,
                                     0, cov_pose, 0, 0, 0, 0,
@@ -509,8 +530,14 @@ void BaseRealSenseNode::pose_callback(rs2::frame frame)
                                     0, 0, 0, cov_twist, 0, 0,
                                     0, 0, 0, 0, cov_twist, 0,
                                     0, 0, 0, 0, 0, cov_twist};
-        odom_msg.twist.twist.linear = v_msg.vector;
-        odom_msg.twist.twist.angular = om_msg.vector;
+        odom_msg.twist.twist.linear.x = v_odom_c.x();
+        odom_msg.twist.twist.linear.y = v_odom_c.y();
+        odom_msg.twist.twist.linear.z = v_odom_c.z();
+        odom_msg.twist.twist.angular.x = w_odom_c.x();
+        odom_msg.twist.twist.angular.y = w_odom_c.y();
+        odom_msg.twist.twist.angular.z = w_odom_c.z();
+        // odom_msg.twist.twist.linear = v_msg.vector;
+        // odom_msg.twist.twist.angular = om_msg.vector;
         odom_msg.twist.covariance ={cov_pose, 0, 0, 0, 0, 0,
                                     0, cov_pose, 0, 0, 0, 0,
                                     0, 0, cov_pose, 0, 0, 0,
