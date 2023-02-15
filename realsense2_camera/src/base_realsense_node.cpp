@@ -477,7 +477,7 @@ void BaseRealSenseNode::pose_callback(rs2::frame frame)
 
     if (_publish_odom_tf) br.sendTransform(msg);
 
-    // if (0 != _odom_publisher->get_subscription_count())
+    if (0 != _odom_publisher->get_subscription_count())
     {
         double cov_pose(_linear_accel_cov * pow(10, 3-(int)pose.tracker_confidence));
         double cov_twist(_angular_velocity_cov * pow(10, 1-(int)pose.tracker_confidence));
